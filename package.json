@@ -1,0 +1,54 @@
+{
+  "name": "china-rs-scraper",
+  "private": "true",
+  "version": "0.0.1",
+  "description": "scraper",
+  "main": "dist/product.js",
+  "scripts": {
+    "test": "mocha test/**/lib.*.js",
+    "dev-test": "nodemon --exec 'mocha test/**/lib.*.js' || true",
+    "build:source": "rimraf dist/ && babel lib/ --out-dir dist/",
+    "clean": "rimraf dist",
+    "build": "npm run build:source"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alincode/china-rs-scraper"
+  },
+  "keywords": [
+    "scraper"
+  ],
+  "author": "alincode <alin.code@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "babel-core": "^6.9.0",
+    "babel-plugin-transform-runtime": "^6.1.2",
+    "babel-polyfill": "^6.9.0",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-stage-0": "^6.5.0",
+    "bluebird": "^3.4.6",
+    "cheerio": "*",
+    "debug": "*",
+    "html-to-text": "^2.1.3",
+    "lodash": "^4.16.6",
+    "memoizee": "*",
+    "nodemon": "^1.11.0",
+    "ramda": "*",
+    "request": "*",
+    "throttled-request": "*"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "chai": "*",
+    "chai-as-promised": "^6.0.0",
+    "eslint": "*",
+    "eslint-config-semistandard": "*",
+    "eslint-config-standard": "*",
+    "eslint-plugin-promise": "*",
+    "eslint-plugin-standard": "*",
+    "mocha": "^2.5.3",
+    "promise-log": "*",
+    "rimraf": "^2.5.4",
+    "validator": "*"
+  }
+}
