@@ -1,5 +1,5 @@
 {
-  "name": "china-rs-scraper",
+  "name": "cn-element14-scraper",
   "private": "true",
   "version": "0.0.1",
   "description": "scraper",
@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/alincode/china-rs-scraper"
+    "url": "https://github.com/alincode/cn-element14-scraper"
   },
   "keywords": [
     "scraper"
