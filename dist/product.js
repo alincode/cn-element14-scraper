@@ -20,6 +20,14 @@ var cheerio = require('cheerio');
 var R = require('ramda');
 var htmlToText = require('html-to-text');
 
+
+function getData(htmlString) {
+  var data = htmlToText.fromString(htmlString, {
+    wordwrap: 130
+  });
+  return data;
+}
+
 var Product = function () {
   function Product(html, url) {
     _classCallCheck(this, Product);
@@ -49,6 +57,7 @@ var Product = function () {
     key: 'parseFields',
     value: function parseFields($) {
       var fields = {};
+      this.display($);
       fields.priceStores = this.getPriceStores($, fields);
       this.getInfoRows($, fields);
       fields.documents = this.getDocuments($);
@@ -58,27 +67,29 @@ var Product = function () {
       }, fields);
     }
   }, {
-    key: 'getLead',
-    value: function getLead(val) {
-      return;
-    }
-  }, {
-    key: 'getRohs',
-    value: function getRohs(val) {
-      return;
-    }
-  }, {
     key: 'getAmount',
     value: function getAmount($) {
       var that = this;
-      return;
+      var amount = getData($('.availability').html()).split(' ')[0];
+      amount = parseInt(amount.replace(',', ''));
+      return amount;
+    }
+  }, {
+    key: 'display',
+    value: function display($) {
+      var that = this;
+      $('[itemprop]').each(function (i, elem) {
+        var name = $(elem).attr('itemprop');
+        var value = getData($(elem).html());
+        // console.log(`name:${name}, value:${value}`);
+      });
     }
   }, {
     key: 'getCategory',
     value: function getCategory($) {
       var that = this;
       var categoryCnt = $('#breadcrumb li').length;
-      var category = that.getData($($('#breadcrumb li')[categoryCnt - 1]).html());
+      var category = getData($($('#breadcrumb li')[categoryCnt - 1]).html());
       category = _lodash2.default.trim(category.split('[')[0]);
       return category;
     }
@@ -86,9 +97,12 @@ var Product = function () {
     key: 'getDescription',
     value: function getDescription($) {
       var that = this;
+      var descElement = $('#fnb_features li');
+      if (descElement.length == 0) return '';
       var description = '';
-      $('.rangeOverview').each(function (i, elem) {
-        description += that.getData($(elem).html());
+
+      $(descElement).each(function (i, elem) {
+        description = description + getData($(elem).html()) + ',';
       });
       return description;
     }
@@ -100,24 +114,22 @@ var Product = function () {
 
       try {
         var that = this;
-        fields.sku = that.getData($('[itemprop=sku]').html());
-        fields.pn = that.getData($('[itemprop=mpn]').html());
-        fields.mfs = that.getData($('[itemprop=brand]').html());
-        fields.description = that.getDescription($);
 
+        $('[itemprop]').each(function (i, elem) {
+          var name = $(elem).attr('itemprop');
+          var value = getData($(elem).html());
+          if (name.indexOf('manufacturer') != -1) fields.mfs = value;
+          if (name.indexOf('sku') != -1) fields.sku = value;
+          if (name.indexOf('mpn') != -1) fields.pn = value;
+        });
+        var description = that.getDescription($);
+        if (description) fields.description = description;
         fields.category = that.getCategory($);
+        fields.amount = this.getAmount($);
       } catch (e) {
         console.error('e:', e.message);
       }
       return fields;
-    }
-  }, {
-    key: 'getData',
-    value: function getData(htmlString) {
-      var data = htmlToText.fromString(htmlString, {
-        wordwrap: 130
-      });
-      return data;
     }
   }, {
     key: 'getDocuments',
@@ -125,7 +137,7 @@ var Product = function () {
       var that = this;
       var docRows = [];
       var docs = [];
-      var docUrl = $('.techRefLink a').attr('onclick').split('\'')[1];
+      var docUrl = $('#technicalData a').attr('href');
       docs.push(docUrl);
       return docs;
     }
@@ -140,16 +152,14 @@ var Product = function () {
       var attrTdRows = [];
       var attrs = [];
 
-      $('.specTableContainer .column2').each(function (i, elem) {
-        var title = that.getData($(elem).html());
-        var value = that.getData($(elem).next().html());
+      $('.pdpProductContent .collapsable-content dt').each(function (i, elem) {
+        var title = getData($(elem).html());
+        var value = getData($(elem).next().html());
         if (value) {
           var obj = {};
           obj.key = title;
           obj.value = value;
           attrs.push(obj);
-
-          if (title == '商品信息') fields.description = value;
         }
       });
       return attrs;
@@ -158,29 +168,34 @@ var Product = function () {
     key: 'getCurrency',
     value: function getCurrency($) {
       var that = this;
-      var currency = $('[itemprop=priceCurrency]').attr('content');
+      var currency = $('[itemprop=priceCurrency]').html();
       return currency;
     }
   }, {
+    key: 'getPriceStoresAmount',
+    value: function getPriceStoresAmount($, elem) {
+      return parseInt(getData($(elem).html()).replace('+', ''));
+    }
+  }, {
     key: 'getPriceStoresPrice',
-    value: function getPriceStoresPrice($, elem) {
-      return parseInt($(elem).find('span').html());
+    value: function getPriceStoresPrice($, elem, currency) {
+      var price = getData($(elem).next().html()).replace(currency, '');
+      return price;
     }
   }, {
     key: 'getPriceStores',
     value: function getPriceStores($, fields) {
       var that = this;
-      fields.currency = that.getCurrency($);
+      var currency = void 0;
+      currency = that.getCurrency($);
+      fields.currency = currency;
       var priceCollection = [];
       var firstObj = {};
-      firstObj.amount = 1;
-      firstObj.unitPrice = $('[itemprop=price]').html();
-      priceCollection.push(firstObj);
 
-      $('.value-row .breakRangeWithoutUnit').each(function (i, elem) {
+      $('.tableProductDetailPrice .qty').each(function (i, elem) {
         var obj = {};
-        obj.amount = that.getPriceStoresPrice($, elem);
-        obj.unitPrice = $(elem).next().find('[itemprop=price]').html();
+        obj.amount = that.getPriceStoresAmount($, elem);
+        obj.unitPrice = that.getPriceStoresPrice($, elem, currency);
         priceCollection.push(obj);
       });
       return priceCollection;
